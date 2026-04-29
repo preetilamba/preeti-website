@@ -1,0 +1,121 @@
+---
+title: "Autoregressive Language Models: Why Next-Token Prediction Works So Well"
+date: "2026-04-26"
+summary: "A clear explanation of how autoregressive language models generate text one token at a time — and why such a simple objective leads to surprisingly broad capabilities."
+tags: ["Language Models", "Transformers", "Generative AI"]
+slug: "autoregressive-language-models"
+---
+
+# Autoregressive Language Models: Why Next-Token Prediction Works So Well
+
+Large language models like GPT-4, Claude, and Llama generate text one token at a time. This might seem like a strange design choice — surely it would be better to generate everything at once? — but it turns out to be surprisingly powerful. Understanding why requires looking carefully at the mechanics of autoregressive generation, and at what the training objective is actually doing.
+
+## What does "autoregressive" mean?
+
+In statistics, an autoregressive model is one where the current value of a variable depends on its past values. For language models, this means: the probability of the next token depends on all the previous tokens.
+
+Formally, an autoregressive language model learns the distribution:
+
+```
+P(x₁, x₂, ..., xₙ) = P(x₁) · P(x₂ | x₁) · P(x₃ | x₁, x₂) · ...
+```
+
+This is just the chain rule of probability, applied to sequences. Every joint distribution over sequences can be written this way — the question is how to model each conditional efficiently.
+
+To make this concrete: after the context "The capital of France is", the model should assign high probability to "Paris" and low probability to unrelated tokens like "banana". The model is not storing a fixed lookup table of answers. It is estimating a probability distribution over possible continuations, conditioned on everything that came before.
+
+## Tokens, not words
+
+Language models do not typically operate on words directly. They operate on **tokens** — chunks of text produced by a tokenizer. A token might be a common word, a word piece, or a single character. For English text, a token is roughly 3–4 characters on average.
+
+Tokenization converts raw text into a sequence of integers (token IDs). The model works on these integer sequences. At the end, the sequence is converted back to text.
+
+The choice of tokenizer affects model behavior in subtle ways. Common words get single tokens, while rare words get broken into multiple tokens. Numbers, code, and non-English text are often tokenized very differently from prose.
+
+## The transformer architecture
+
+Modern autoregressive language models are built on the **transformer** architecture, introduced in "Attention Is All You Need" (Vaswani et al., 2017).
+
+The key innovation is **self-attention**: each position in the sequence can gather information from other positions through learned attention weights. In a standard transformer, all positions can attend to all others. In an **autoregressive transformer**, this is restricted by a **causal mask**: each token can attend only to earlier tokens and itself — not to tokens that come after it. This is essential; without it, the model would be able to see the answer it is trying to predict.
+
+The architecture processes the token sequence through many layers of:
+- Multi-head self-attention (to mix information across positions)
+- Feed-forward networks (to process information at each position independently)
+- Layer normalization (for training stability)
+
+The final layer's output at position *i* produces a probability distribution over the vocabulary, predicting what token comes next at position *i+1*.
+
+## Training: predict the next token
+
+Training is straightforward. Given a large corpus of text, the model is trained to predict the next token at every position.
+
+The loss is the cross-entropy between the predicted distribution and the actual next token, averaged over all positions in all training sequences.
+
+An important technical point: during training, all next-token predictions are made in parallel. The full training sequence is known in advance, so the model can predict position 2 given position 1, position 3 given positions 1–2, and so on — all simultaneously, with teacher forcing (using the real tokens as context, not the model's own predictions). During generation, however, the future tokens do not yet exist, so the model must produce them one at a time, feeding each new token back as context for the next step.
+
+This training signal is remarkably strong. To predict the next token accurately, the model must capture:
+- Syntax (grammatical structure)
+- Semantics (word meaning and context)
+- World knowledge (facts about the world encoded in text)
+- Style and register
+- Long-range dependencies (what was said earlier in the document)
+
+None of this is explicitly labeled. The model learns it all from the statistical regularities of text.
+
+A common misconception is that next-token prediction only teaches surface-level word statistics. In practice, accurate next-token prediction often requires latent structure: resolving pronoun references, tracking entities across paragraphs, understanding code syntax, following the logic of an argument, and applying factual associations. This is why such a simple objective can lead to surprisingly broad capabilities.
+
+## Generation: sampling from the model
+
+<AutoregressiveGeneration />
+
+At inference time, the model generates text by repeating a simple loop:
+
+1. Start with a **prompt** — some initial text from the user.
+2. Feed the prompt tokens through the model to get a probability distribution over the next token.
+3. Sample a token from this distribution.
+4. Append the sampled token to the sequence.
+5. Repeat from step 2, now including the new token.
+
+This continues until a stop token is generated or a length limit is reached.
+
+### Decoding strategies
+
+Taking the single highest-probability token at each step is called **greedy decoding**. It is deterministic, but often produces repetitive or dull text. Most systems introduce randomness through sampling strategies:
+
+- **Temperature**: Dividing logits by a temperature *T* before sampling controls sharpness. Lower temperature → more confident and repetitive. Higher temperature → more random and creative.
+- **Top-k sampling**: Only consider the top *k* tokens by probability.
+- **Top-p (nucleus) sampling**: Only consider the smallest set of tokens whose cumulative probability exceeds *p*. A popular default in practice.
+
+### KV caching
+
+In practice, models use a **KV cache** to make generation efficient. At each step, the model needs the key and value representations of all previous tokens for attention. Rather than recomputing these from scratch at every step, they are cached and reused. This makes sequential generation significantly faster, though the fundamental sequential dependency remains.
+
+## Why this works so well
+
+The success of autoregressive language models is, in retrospect, surprising. The training objective is simple. The architecture has minimal task-specific inductive biases. Yet the resulting models can answer questions, write code, translate languages, summarize documents, and reason about simple problems.
+
+The leading explanation is that predicting the next token accurately requires solving a very large number of latent sub-problems simultaneously. A model that does this well across trillions of tokens of text must have learned rich representations of language, knowledge, and reasoning.
+
+Whether this constitutes genuine understanding, or very sophisticated pattern matching, is a genuinely open question.
+
+## Limitations worth knowing
+
+**Sequential generation at inference time**: Tokens must be generated one at a time, in order. This limits parallelism and makes generation slow for long outputs, despite the KV cache.
+
+**No revision**: Once a token is generated, the model cannot go back and change it. Errors early in the sequence can propagate and compound.
+
+**Exposure bias**: During training, the model always sees real previous tokens as context. During generation, it sees its own (potentially imperfect) outputs. This mismatch can cause errors to accumulate over long generations, especially on out-of-distribution inputs.
+
+**Context window**: Attention scales quadratically with sequence length. There are hard limits to how much context the model can attend to, though engineering advances continue to push these limits further.
+
+**Hallucination**: Models sometimes generate confident-sounding but incorrect statements. The training objective does not distinguish between well-grounded and confabulated text.
+
+**Distribution shift**: Models trained on text from the web may behave unpredictably on text that looks very different from their training distribution.
+
+## Conclusion
+
+Autoregressive language models turn text generation into a sequence of classification problems: at each step, predict what comes next. The objective is simple, the architecture is general-purpose, and the training data is abundant. This combination has produced systems whose capabilities are still not fully understood.
+
+Understanding autoregression also clarifies what alternative approaches are trying to change. Instead of committing to one token at a time, left-to-right and irreversibly, newer paradigms such as diffusion language models aim to refine many positions simultaneously over multiple steps. Autoregressive generation is the baseline against which these approaches define themselves.
+
+<NextRead slug="diffusion-vs-autoregressive" title="Diffusion Models vs. Autoregressive Models" />

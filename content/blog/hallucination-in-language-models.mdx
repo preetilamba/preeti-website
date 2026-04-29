@@ -1,0 +1,173 @@
+---
+title: "Hallucination in Language Models: Why Fluent Text Can Still Be Wrong"
+date: "2026-04-29"
+summary: "Language models are trained to produce likely text, not guaranteed truth. This gap explains why hallucination is so difficult to eliminate."
+tags: ["Language Models", "Hallucination", "Factuality", "AI Safety"]
+slug: "hallucination-in-language-models"
+---
+
+# Hallucination in Language Models: Why Fluent Text Can Still Be Wrong
+
+Large language models are often surprisingly fluent. They can explain technical ideas, write code, summarise documents, and answer questions in a confident, polished style. This fluency is useful — but it can also be misleading.
+
+A model can produce an answer that sounds correct, uses the right terminology, and follows a convincing structure, while still being factually wrong. This failure mode is usually called hallucination.
+
+Hallucination is not just an annoying bug. It reveals something fundamental about how language models work: they are trained to generate plausible continuations of text, not to guarantee truth.
+
+## What does hallucination mean?
+
+In language models, hallucination refers to outputs that are fluent and plausible but unsupported, incorrect, fabricated, or inconsistent with the given source.
+
+The word "hallucination" is imperfect. The model is not literally perceiving something false. It is generating text that fits learned patterns, even when the content is not grounded in reality or the provided context. The term has stuck because it captures something real: the output sounds like confident knowledge, but it is not.
+
+Hallucination shows up in many forms:
+
+- Inventing a fake paper title and plausible-sounding authors
+- Giving a wrong date for a historical event
+- Making up a citation with a convincing DOI
+- Summarising a document with details not present in the source
+- Confidently explaining a claim that is simply false
+- Producing code that looks syntactically correct but calls a function that does not exist
+
+What these have in common: the output is fluent, structured, and confident — and wrong.
+
+## Why fluency is not truth
+
+Fluency measures whether text looks coherent. Truth requires correspondence with the world, a source document, or a formal system. These are different things, and confusing them is one of the most common mistakes users make when working with language models.
+
+A sentence can be grammatically perfect and still false. "The capital of Australia is Sydney" is fluent, common-sounding, and wrong. A language model trained on text may learn that "capital of Australia" often appears near "Sydney" in certain contexts — because many people incorrectly believe this, or because Sydney appears frequently in Australian text — and producing the most plausible continuation is not the same as verifying the fact. (The capital is Canberra.)
+
+This is not a failure of sophistication. It is a consequence of what the model is optimised to do.
+
+## Why next-token prediction does not guarantee truth
+
+Most modern language models are trained to predict the next token in large text corpora. This objective rewards outputs that are statistically likely given the context. It does not directly reward factual accuracy, source faithfulness, or calibrated uncertainty.
+
+Of course, next-token prediction can teach a model many facts, because factual statements appear in training data. But the objective itself does not distinguish between "true because grounded" and "plausible because common." A model that learns from a corpus containing both correct and incorrect claims about the world will learn statistical patterns over all of them. The most probable continuation is not always the most accurate one.
+
+This is why hallucination is a structural property of how language models are trained, not just an implementation detail that better engineering will automatically fix. Addressing it requires changes to objectives, training data, evaluation, or system design — often all of these.
+
+## Types of hallucination
+
+Not all hallucination looks the same. It helps to distinguish the main types:
+
+| Type | What it means | Example |
+|---|---|---|
+| Factual hallucination | The model states an incorrect fact | Wrong historical date or location |
+| Citation hallucination | The model invents a source | Fake paper, DOI, or author list |
+| Source-grounded hallucination | The model adds details not present in the provided document | Summary includes unsupported claims |
+| Reasoning hallucination | The model gives an invalid explanation or proof | Correct-sounding but flawed derivation |
+| Tool-use hallucination | The model claims it checked something it did not check | "I searched the database" when it did not |
+| Code hallucination | The model invents APIs or functions | Using a library function that does not exist |
+
+These types have different causes and require different mitigations. Source-grounded hallucination, for instance, is partly about how faithfully the model attends to a provided document. Factual hallucination is about the accuracy of knowledge embedded in the model's parameters. Reasoning hallucination is about whether the model's inference steps actually follow from its premises. They often co-occur, but they are distinct problems.
+
+## Why confidence is misleading
+
+Language models can sound confident because confidence is a feature of style, not necessarily of knowledge.
+
+Humans often use hesitation, qualification, or uncertainty markers when they are unsure — "I think," "I'm not certain," "you might want to verify this." Language models can imitate these patterns, but they do not automatically know when to use them reliably. A model may say "certainly" before a wrong answer, not because it has verified the claim, but because confident answers are common in the kinds of text it has learned from. Encyclopaedias, textbooks, and authoritative web pages tend not to hedge. Models trained on this text inherit that confident tone whether or not it is warranted.
+
+This is why calibrated uncertainty — the ability to signal when you are likely to be wrong — is an active research problem. A model that knows what it does not know, and says so, would be substantially more useful and safer than one that is confidently wrong.
+
+## Retrieval and tool use help, but do not solve the problem
+
+Retrieval-augmented generation gives the model access to external documents at inference time. Tool use can let the model search the web, run code, query databases, or perform calculations. These methods can meaningfully reduce hallucination — but they do not eliminate it.
+
+Several failure modes persist even with retrieval and tools:
+
+- Retrieved documents may be irrelevant to the actual query
+- The model may ignore or misread the retrieved evidence
+- The source document itself may be wrong or outdated
+- The model may cite a source correctly but infer beyond what the source actually says
+- Tool outputs may be stale, incomplete, or misinterpreted
+- The model can still add unsupported details when generating from retrieved context
+
+Grounding gives the model something to be faithful to. It does not guarantee that the model will be faithful.
+
+This means retrieval and tool use shift the hallucination problem rather than eliminating it. Instead of asking "did the model make this up?", the evaluation question becomes "did the model accurately represent what the retrieved source said?" — which is still hard to measure automatically at scale.
+
+## Evaluation challenges
+
+Hallucination is hard to evaluate because correctness is not always easy to check.
+
+For closed-form questions with a single right answer — "what year did X happen?" — verification is straightforward. But most language model use cases involve open-ended generation: summaries, explanations, code, essays, advice. In these settings:
+
+- There may be multiple valid answers, making simple comparison to a reference unreliable
+- Checking factual accuracy may require domain expertise
+- Source faithfulness and world factuality are different properties that require different evaluation approaches
+- Facts change over time, making static benchmarks stale
+- Automatic metrics like BLEU or ROUGE capture surface similarity, not factual accuracy
+- LLM judges tasked with detecting hallucination face the same underlying problem as the model they are judging: they must know what is true, what is supported, and what follows from the evidence — and they can hallucinate too
+
+A hallucination detector has the same problem as the model it is judging: it must know what is true, what is supported, and what follows from the evidence.
+
+This connects directly to the broader evaluation problem in generative AI. Factuality benchmarks exist, but they are typically narrow, domain-specific, and not robust to subtle errors. Building comprehensive, reliable hallucination evaluation remains an open research challenge.
+
+<MyView>
+Hallucination is one of the clearest examples of why evaluation in generative AI is so difficult. The model can satisfy surface-level criteria — fluency, helpful tone, coherent structure — while failing the property we actually care about: whether the answer is true and supported. A model that scores well on readability and helpfulness evaluations can still be systematically wrong on factual content. This is why factuality and source faithfulness need to be evaluated separately from general response quality, and why improving one does not automatically improve the other.
+</MyView>
+
+## Why hallucination is a safety problem
+
+Hallucination matters most when users rely on model output to make real decisions.
+
+A made-up movie recommendation is annoying. A made-up legal deadline, medical dosage, or scientific citation can be dangerous. Consider what happens when:
+
+- A patient uses a model for medical advice and receives a confident but incorrect drug interaction
+- A lawyer uses a model to find case citations and submits fabricated references
+- A researcher uses a model to summarise literature and builds on claims that were never made
+- A developer deploys code generated by a model that calls a non-existent API
+- A student uses a model for educational explanations and learns an incorrect framework
+
+In each case, the problem is not just that the model was wrong. It is that the model was wrong in a way that looked authoritative. Fluency creates a false sense of reliability. Users who do not know the domain well enough to spot the error are most at risk.
+
+Not every hallucination is equally harmful — the stakes depend on the context and what decision hinges on the output. But the pattern is consistent: high-stakes use cases are exactly where fluency-as-authority is most dangerous, and exactly where hallucination detection is hardest because the domain is specialised.
+
+## What can users and researchers do?
+
+The problem does not have a complete solution yet, but it is not intractable.
+
+**For users**, some practical habits reduce risk:
+
+- Ask the model to cite sources, then verify those sources independently
+- Verify important factual claims before acting on them
+- Use models with retrieval or browsing access for current-event or domain-specific facts
+- Ask the model to explicitly distinguish what it is confident about from what it is inferring
+- Apply extra caution for high-stakes topics: medical, legal, financial, scientific
+
+**For researchers and developers**, active directions include:
+
+- Better retrieval and grounding to give models verified external context
+- Uncertainty calibration — training models to output reliable confidence estimates
+- Abstention mechanisms — training models to say "I don't know" rather than guess
+- Source-grounded generation objectives that penalise adding unsupported content
+- Factuality benchmarks that cover a range of domains and error types
+- Human expert evaluation for domains where automated checking is insufficient
+- Process-level monitoring rather than only evaluating final outputs
+
+The goal is not to make models never say anything uncertain. The goal is to make uncertainty visible and to reduce unsupported confidence.
+
+## Open questions
+
+**How can models better represent uncertainty?** Calibration techniques help, but reliably communicating "I might be wrong about this specific claim" is different from overall calibration.
+
+**How should we evaluate factuality in open-ended generation?** Factuality benchmarks for closed-form questions are established. Evaluating factual accuracy in multi-paragraph explanations or long-form summaries is much harder.
+
+**Can models reliably distinguish what they know from what they infer?** This requires a kind of self-knowledge that current models do not possess in any robust form.
+
+**How do we prevent hallucinated citations in scientific and legal settings?** These are particularly high-stakes and currently poorly addressed.
+
+**Can retrieval systems guarantee source faithfulness, or only improve it?** Current evidence suggests the latter. What would it take to make strong guarantees?
+
+**How should models behave when the answer is unknown or ambiguous?** Confident refusal is different from uncertain hedging. Getting this distinction right matters for both usefulness and safety.
+
+## Conclusion
+
+Hallucination is not just a surface-level failure of language models. It follows from a deeper mismatch between the training objective and what users often want. Users want truthful, grounded, reliable answers. The model is trained to produce likely text.
+
+This does not mean language models are useless. It means their outputs must be understood correctly: fluent text is evidence of linguistic competence, not automatic evidence of truth.
+
+Reducing hallucination will require better grounding, better evaluation, better uncertainty estimation, and systems that know when not to answer. Until then, the most important habit for using language models is simple: treat fluency as helpful, but not sufficient.
+
+<NextRead slug="evaluation-in-generative-ai" title="Evaluation in Generative AI: Why Good Models Are So Hard to Measure" />

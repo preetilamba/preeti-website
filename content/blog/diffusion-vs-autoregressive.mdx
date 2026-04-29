@@ -1,0 +1,107 @@
+---
+title: "Diffusion Models vs. Autoregressive Models: Generation by Commitment vs. Refinement"
+date: "2026-04-26"
+summary: "A comparison of two major paradigms for generative modeling: autoregressive models that commit one token at a time, and diffusion models that refine from noise across the whole sequence."
+tags: ["Diffusion Models", "Language Models", "Generative AI"]
+slug: "diffusion-vs-autoregressive"
+---
+
+# Diffusion Models vs. Autoregressive Models: Generation by Commitment vs. Refinement
+
+There are two major paradigms for generative modeling of sequences: autoregressive models and diffusion models. They are genuinely different in how they produce data — not different implementations of the same idea, but different answers to the question of what generation should look like.
+
+Before going further, it is worth being precise about scope. For images and audio, diffusion models are currently state-of-the-art. For text, autoregressive models are dominant. This article covers both, but when it comes to language specifically, the comparison is asymmetric: autoregressive models are the established baseline, and diffusion language models are an active research area that has not yet matched autoregressive models at scale.
+
+## The basic mechanics
+
+**Autoregressive models** generate data one token at a time, from left to right. Each token is conditioned on all previous tokens. The model makes a sequence of discrete decisions, committing to each one before moving on.
+
+Consider completing the sentence "The capital of France is ___". An autoregressive model processes all the preceding tokens — "The", "capital", "of", "France", "is" — and outputs a probability distribution over the vocabulary. It then samples a token (most likely "Paris"), appends it, and proceeds. The decision is committed; there is no going back.
+
+**Diffusion models** start with noise and iteratively refine a full sequence over many steps. Rather than making decisions position by position, the model processes the entire sequence simultaneously at each step, progressively denoising it.
+
+These are genuinely different computational structures, not just different implementations of the same idea.
+
+<DiffusionVsAR />
+
+## Generation direction
+
+In autoregressive models, generation is strictly left-to-right. The model cannot revise earlier tokens based on later context. If the fourth token is wrong given what comes after, there is no mechanism to fix it.
+
+In diffusion models, generation happens across the whole sequence simultaneously. The model can, in principle, revise any position based on any other position at each denoising step. This gives it a form of global coordination that autoregressive models lack during generation.
+
+One important nuance: "global access to all positions" does not automatically mean "global coherence." A diffusion model that poorly learns the noise reversal process may still produce incoherent text, even though it technically processes all positions simultaneously. The structural opportunity is real; whether it is reliably exploited is an empirical question that depends heavily on model quality and scale.
+
+## Training objectives
+
+Autoregressive models are trained with **next-token prediction** — a cross-entropy loss at every position. The objective is simple and direct: predict what comes next.
+
+Diffusion models are typically trained with a **noise prediction** objective — given a noisy version of the data and the noise level, predict the added noise. For continuous data like images, this is straightforward. For discrete text, it requires extra design choices (masked diffusion, token replacement, or embedding-space diffusion), each with its own tradeoffs.
+
+Both objectives are stable to train and scale well, though the training dynamics and the difficulty of discrete data handling differ substantially.
+
+## Comparison at a glance
+
+| | Autoregressive | Diffusion |
+|---|---|---|
+| **Generation order** | Sequential, left-to-right | All positions simultaneously, iteratively |
+| **Revision** | None — each token is committed | In principle, any position at any denoising step |
+| **Natural for text** | Yes — discrete tokens fit naturally | Requires extra design work for discrete data |
+| **Inference cost** | One forward pass per token; N passes for N tokens | Many denoising steps; each processes full sequence in parallel |
+| **Where dominant today** | Text generation | Image, audio, video generation |
+| **Key open question** | Will sequential commitment limit long-range quality? | Can discrete diffusion match AR quality at scale? |
+
+## Inference speed
+
+This is one of the most practically significant differences.
+
+Autoregressive models generate each token with a single forward pass through the model. If you want 1000 tokens, you run the model 1000 times, sequentially. Parallelism during inference is limited because each token depends on all previous ones.
+
+Diffusion models require many forward passes too — one per denoising step — but these passes process the full sequence in parallel at each step. Research on reducing the required number of denoising steps (DDIM, DPM-Solver, consistency models) has made diffusion inference much faster, but for text generation, autoregressive models typically remain faster at comparable quality levels given current techniques.
+
+## Discrete vs. continuous
+
+Autoregressive language models operate naturally in discrete space — they produce probability distributions over a vocabulary of tokens. This matches the inherently discrete nature of text.
+
+Diffusion models were originally developed for continuous data (images, audio). Applying them to discrete text requires extra work. Approaches include:
+- **Discrete diffusion**: corruption happens in token space (masking or token replacement).
+- **Continuous diffusion**: tokens are embedded into continuous space, diffusion is applied, and outputs are projected back.
+
+Neither approach is as natural as autoregressive prediction for discrete sequences, and this is a significant reason autoregressive models currently dominate for text generation.
+
+## Long-range coherence
+
+A long-standing intuition is that diffusion models might handle long-range coherence better, because each denoising step can process the entire sequence at once. Autoregressive models must capture long-range dependencies implicitly through their representations — the model at position *n* must have somehow preserved relevant information from position *1* through its attention mechanism.
+
+The empirical evidence is mixed. Autoregressive models with sufficient context length handle long documents well in practice. Whether diffusion models provide a fundamental advantage for long-range coherence at the scale where they can be properly compared is still an open research question.
+
+## Controllability, safety, and evaluation
+
+Controllability — steering generation toward specific properties — works differently in each paradigm.
+
+For autoregressive models, common approaches include modifying token probability distributions at each step, prompting strategies, and fine-tuning with reinforcement learning from human feedback.
+
+For diffusion models, classifier-free guidance steers the denoising trajectory. The iterative nature of the process means you have multiple opportunities to apply guidance at each step. This also raises interesting questions for safety: in an autoregressive model, safety interventions happen at discrete token decisions. In a diffusion model, generation trajectories are themselves objects — which may open up new ways to monitor or steer generation before it reaches a final output. Whether this structural difference translates into practical safety advantages is an active area of exploration.
+
+Evaluation is also harder for diffusion language models. Many standard benchmarks assume autoregressive generation. New evaluation frameworks are needed to properly measure properties like controllability, intermediate state interpretability, and generation quality across denoising steps.
+
+<MyView>
+I think the most interesting comparison is not about which paradigm is "better" — autoregressive models will remain dominant for text for the foreseeable future. The more interesting question is what studying diffusion language models teaches us about what is fundamental to generation versus what is specific to the left-to-right commitment structure. Sometimes theoretical competitors produce insight precisely by making you ask questions you wouldn't have thought to ask.
+</MyView>
+
+## Open questions
+
+- Will diffusion language models eventually match autoregressive models at comparable scale and compute?
+- Are there specific tasks — structured output, planning-heavy generation, revision-heavy writing — where iterative refinement provides a measurable advantage?
+- Can hybrid approaches combine the efficiency of autoregressive generation with the global coordination of diffusion?
+- What do intermediate denoising states actually represent, and can they be made interpretable?
+
+## Conclusion
+
+Autoregressive models and diffusion models are two principled answers to the same question: how do you generate structured, high-quality data?
+
+Autoregressive models commit sequentially, one token at a time. Diffusion models refine globally, one denoising step at a time. Each approach has natural strengths and natural limitations.
+
+For now, autoregressive models dominate text, while diffusion models dominate images and audio. Whether this division holds, and what hybrid approaches might emerge, is one of the more interesting open questions in generative AI research.
+
+<NextRead slug="why-diffusion-language-models-matter" title="Why Diffusion Language Models Matter: Generation as Iterative Refinement" />

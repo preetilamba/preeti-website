@@ -1,0 +1,198 @@
+---
+title: "How to Read Machine Learning Papers Without Getting Lost"
+date: "2026-04-26"
+summary: "A practical multi-pass workflow for reading ML papers — from quick relevance checks to deep critical evaluation, with strategies for different paper types and things to watch out for."
+tags: ["PhD", "Research Process", "Machine Learning"]
+slug: "how-i-read-ml-papers"
+---
+
+# How to Read Machine Learning Papers Without Getting Lost
+
+When I started my PhD, I read papers the way I had read textbooks — from the first word to the last, carefully, in order. This was slow and often counterproductive. I would spend an hour on a paper only to realize at the end that it was not relevant to my work. I would get bogged down in mathematical appendices before I had understood what the paper was actually claiming.
+
+The multi-pass approach I describe here is how I read now. It is adapted from the classic Keshav paper reading guide, with modifications for the specific conventions of ML research. The core idea: match your depth of reading to how useful the paper actually turns out to be.
+
+## Why a multi-pass approach?
+
+Papers vary enormously in quality and relevance. Many papers that look interesting from the title or abstract turn out to be less useful than expected. Reading every paper carefully from the first page would waste a lot of time.
+
+The multi-pass approach lets you make a quick relevance judgment first. You go deep only on papers that earn it.
+
+<PaperReadingPasses />
+
+## Different papers need different reading strategies
+
+ML papers are not all the same. Before starting, it helps to know what kind of paper you are reading:
+
+**Theory papers** (new proofs, convergence results, learning theory) — the key content is in the theorem statements and proof sketches. Read the introduction and theorems carefully; the proofs can be checked selectively.
+
+**Systems papers** (new training infrastructure, hardware optimizations, distributed systems) — focus on the problem setup, system design, and throughput/efficiency benchmarks. The architecture diagrams are often the most information-dense part.
+
+**Benchmark papers** (new evaluation datasets, tasks, or leaderboards) — the construction methodology is the critical content. Read how the dataset was created, what it measures, and what its limitations are.
+
+**Empirical papers** (training larger models, scaling experiments, ablations) — the experimental setup and evaluation details matter more than the method novelty. Check baselines and hyperparameters carefully.
+
+**Survey and position papers** — useful for orientation rather than technical depth. Read selectively based on which parts of the literature you need to understand.
+
+## First pass: What problem is this paper solving?
+
+**Goal**: Understand the paper's basic claim and whether it is relevant to you. This should take 5–10 minutes.
+
+**What to read**:
+- Title
+- Abstract
+- Introduction (first and last paragraph especially)
+- Section headings
+- Conclusion
+
+**Questions to answer**:
+- What problem is this paper addressing?
+- What is the main claim?
+- Is this relevant to what I am working on or thinking about?
+- Does the paper seem credible at a surface level?
+
+After the first pass, most papers can be sorted into three categories: not relevant, possibly relevant, and important to read carefully. The first pass protects you from spending hours on papers in the first category.
+
+## Second pass: What is the method really doing?
+
+**Goal**: Understand the technical content at a level where you could explain it to someone else. This takes 30–60 minutes for a typical paper.
+
+**What to read**:
+- Introduction in full
+- Related work (to understand positioning)
+- Method section carefully
+- Figures and tables (often the most information-dense parts of the paper)
+- Skip or skim mathematical proofs if they are not central to your understanding
+
+**Questions to answer**:
+- What is the proposed method, at a conceptual level?
+- How does it differ from prior work?
+- What assumptions does the method make?
+- What are the inputs, outputs, and main components?
+
+**Useful habits**:
+- Sketch the method diagram yourself without looking at the paper's figures.
+- Try to state the method in one sentence.
+- Identify what you still do not understand after this pass.
+
+After the second pass, you should have a good model of what the paper is doing. If you cannot explain it clearly, there are probably gaps to fill.
+
+## Third pass: What evidence supports the claims?
+
+**Goal**: Critically evaluate the experiments and results. This takes another 30–60 minutes.
+
+**What to read**:
+- Experiments section in full
+- Baselines and their descriptions
+- Ablation studies
+- Appendices (often where important details live)
+
+**Questions to answer**:
+- What claims are being made in the experiments?
+- Are the baselines fair and up-to-date?
+- Are the metrics appropriate for the task?
+- Do the results support the claims, or only part of them?
+- What would change the interpretation of the results?
+
+This is where healthy skepticism matters. Papers are typically written to make their results look as strong as possible. It is your job to figure out which claims are robustly supported and which rest on specific choices that might not generalize.
+
+## Fourth pass: What are the limitations?
+
+**Goal**: Identify what the paper does not address. This is often the most valuable part of the reading process for research.
+
+**What to read**:
+- Limitations section (if present)
+- Discussion section
+- Re-read the claims in the introduction with your experimental understanding in hand
+
+**Questions to answer**:
+- What does this method not work on?
+- What assumptions would need to fail for this method to break?
+- What would the authors need to demonstrate to make the claim fully convincing?
+- What follow-up questions does this paper raise?
+
+The limitations section is often too brief or too diplomatic. You may find limitations the authors do not explicitly acknowledge.
+
+## Red flags I watch for
+
+When reading, certain patterns make me more skeptical:
+
+- **No ablation studies** — if the authors did not test which parts of the method actually matter, it is hard to know what is driving the results.
+- **Comparisons to outdated baselines** — a method that beats a two-year-old baseline is not necessarily strong.
+- **Results on only one benchmark** — generalization is usually claimed but often not tested.
+- **Huge hyperparameter differences between the proposed method and baselines** — sometimes the tuning advantage is doing most of the work.
+- **Reported variance that is implausibly low** — high variance results that look clean suggest cherry-picking or insufficient reporting.
+- **Missing code or reproducibility details** — if you cannot replicate the setup, you cannot verify the claims.
+- **Claims that are broader than the experiments** — "our method works for X" when the experiments only test a narrow version of X.
+
+None of these are automatic disqualifiers. But they are reasons to read more carefully.
+
+## Green flags I notice
+
+Conversely, these patterns increase my confidence in a paper:
+
+- Honest discussion of failure modes and limitations in the main text, not just the appendix.
+- Careful ablation studies that test individual components.
+- Results compared against strong, tuned, up-to-date baselines.
+- Error bars and variance reported across multiple seeds.
+- Released code, and results that match the code.
+- A limitations section that identifies cases where the method does not work.
+- Related work that fairly characterizes prior work rather than underselling it.
+
+## My notes template
+
+When a paper is worth retaining, I take notes in a structured format:
+
+```
+Paper: [Title, Authors, Year, Venue]
+Problem: [What problem does this solve?]
+Method: [Core technical idea in 2–3 sentences]
+Key results: [What did they show, quantitatively?]
+Strengths: [What is genuinely strong about this work?]
+Weaknesses / open questions: [What did not convince me? What is left open?]
+Relevance to me: [Why does this matter for what I am thinking about?]
+```
+
+Keeping notes in a consistent format makes them much easier to review later. After a few months, your own notes become a more useful reference than re-reading the papers.
+
+## For my own research
+
+Reading papers as a researcher is different from reading them as a student. When I read now, I am not just trying to understand what a paper does — I am trying to figure out where it leaves space.
+
+The most useful question is often: what did the authors choose not to test? Papers are constrained by compute, time, and the implicit pressure to tell a clean story. The things they chose not to address are often where the interesting follow-up work lives.
+
+<MyView>
+One habit I have found genuinely useful: before I open a paper I am about to read carefully, I write down the specific question I want it to answer. Even if the question is vague — "does this approach work for structured outputs?" or "how do they handle discrete data?" — it sharpens my attention. I spend less time reading sections that do not speak to my question, and more time on the parts that do. Without the question written down first, it is easy to read passively and finish with only a fuzzy sense of what you learned.
+</MyView>
+
+## Practical tips
+
+**Read related papers in batches**: Understanding a paper is easier when you have read others in the same area. Papers build on shared assumptions and vocabulary that become clearer with exposure.
+
+**Use the citation graph**: A paper's related work section tells you what to read next. If the same paper is cited by many papers you find interesting, it is probably worth reading carefully.
+
+**Do not feel obligated to finish**: If a paper is not giving you what you need, it is fine to stop after the second pass. Your time is limited.
+
+**Re-read important papers**: Papers that turn out to be very relevant often reward re-reading. Things that were unclear the first time often become clear after more context.
+
+## Before you close the paper: a checklist
+
+Before considering a paper read, I try to answer five questions:
+
+1. Can I state the main claim in one sentence?
+2. Can I explain what is novel about the method compared to prior work?
+3. Can I identify the strongest and weakest parts of the experimental evidence?
+4. Do I know at least one limitation the authors did not fully address?
+5. Do I know why this paper is or is not relevant to my own work?
+
+If I cannot answer all five, there is more work to do.
+
+## Conclusion
+
+Reading ML papers well is about managing depth of engagement efficiently. Most papers deserve a quick first pass and nothing more. Papers that matter deserve a careful, critical read.
+
+The multi-pass approach helps calibrate this. It keeps you from spending too much time on papers that turn out not to be relevant, while ensuring that important papers get the attention they deserve.
+
+It takes time to build this skill. The first dozen papers in a new area will feel slow and confusing. By the fiftieth, the process becomes much more natural — and the questions you bring to a paper get sharper.
+
+<NextRead slug="evaluation-in-generative-ai" title="Evaluation in Generative AI: Why Good Models Are So Hard to Measure" />

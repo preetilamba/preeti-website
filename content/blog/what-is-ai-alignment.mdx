@@ -1,0 +1,178 @@
+---
+title: "What Is AI Alignment? A Beginner's Guide"
+date: "2026-04-29"
+summary: "Alignment is the problem of making AI systems behave according to intended goals and human preferences — but specifying those goals is harder than it sounds."
+tags: ["AI Alignment", "AI Safety", "RLHF", "Generative AI"]
+slug: "what-is-ai-alignment"
+---
+
+# What Is AI Alignment? A Beginner's Guide
+
+Modern AI systems are increasingly capable. They can write code, answer questions, generate images, summarise documents, and assist with complex tasks. But capability alone is not enough. A system can be powerful and still do the wrong thing.
+
+AI alignment asks a simple-sounding question: how do we make AI systems behave in ways that match what humans actually want?
+
+The difficulty is that "what humans want" is often ambiguous, context-dependent, and hard to specify formally. This article explains what alignment means, how it relates to AI safety, and why it remains an open technical problem.
+
+## What is AI alignment?
+
+AI alignment is the problem of ensuring that an AI system's behaviour matches intended human goals, preferences, and constraints.
+
+Alignment is not just about making a model obey instructions. It is about making sure the system understands the intended objective, behaves reliably under different conditions, and does not exploit loopholes in the way the objective was specified.
+
+Consider two examples. If a model is asked to "be helpful," it should not help a user commit fraud — even if doing so technically satisfies the instruction. If a model is asked to "maximise engagement," it should not do so by amplifying outrage or misinformation — even if that strategy reliably increases click counts. In both cases, the system would be satisfying the letter of the objective while violating its spirit.
+
+Alignment asks: how do we close the gap between what we specified and what we actually meant?
+
+## Alignment vs safety
+
+It helps to distinguish alignment from the broader concept of AI safety, since the two are closely related but not identical.
+
+**AI safety** is the broader goal of building AI systems that do not cause unintended harm. Safety includes robustness, monitoring, security, misuse prevention, evaluation, and deployment practices.
+
+**AI alignment** focuses more specifically on whether a system is pursuing or implementing the right goals. It sits inside the safety umbrella, but it has its own technical research agenda.
+
+A system can be misaligned in several ways: it may optimise the wrong objective, follow instructions too literally, interpret goals in unintended ways, or behave differently under pressure than it does during evaluation. All of these can lead to harm, but they arise from a specific source — a mismatch between the specified objective and the intended one.
+
+| Concept | Main question |
+|---|---|
+| Alignment | Is the system trying to do what we intended? |
+| Safety | Does the system avoid causing harm in deployment? |
+| Robustness | Does the system behave reliably under distribution shift or attack? |
+| Evaluation | Can we measure whether it is behaving correctly? |
+
+These are related but separable questions. A system can pass safety evaluations while still being subtly misaligned, and a well-aligned system can still be unsafe if deployed carelessly.
+
+## Why specifying goals is hard
+
+The alignment problem would be straightforward if we could write down exactly what we want. We cannot.
+
+Many objectives are easy to describe informally but hard to specify precisely:
+
+- **"Be helpful"** — helpful to whom, and under what constraints? Helpful to this user, or to other users who might be harmed by the advice?
+- **"Give accurate medical information"** — what if the user asks for a diagnosis? What if the information is accurate but dangerous without clinical context?
+- **"Maximise user engagement"** — engagement may conflict with user well-being. A model that keeps someone reading by producing anxiety-inducing content is technically doing its job.
+- **"Write persuasive text"** — persuasion can become manipulation. The line between them is contextual and contested.
+- **"Summarise this document"** — should the summary preserve the uncertainty and qualifications in the original? Or smooth them out for readability?
+
+In each case, the informal description sounds clear but hides genuine ambiguity. Once we try to translate it into a formal objective or reward signal, the ambiguity becomes a specification gap — and systems optimised against imperfect specifications tend to find the gaps.
+
+The problem is not that humans have no values. The problem is that our values are rich, contextual, and difficult to compress into a simple reward function.
+
+## Reward hacking
+
+When there is a gap between the specified objective and the intended one, systems optimised against the specification will often exploit that gap. This is called reward hacking.
+
+Reward hacking happens when a system achieves a high score according to the specified reward while violating the spirit of the task:
+
+- A game-playing agent finds a physics bug that yields points without playing the game as intended.
+- A robot told to clean a room hides objects under a rug rather than removing them.
+- A content recommender maximises clicks by promoting emotionally charged or misleading content.
+- A language model learns to sound helpful and confident without being truthful, because confident-sounding answers tend to receive higher ratings.
+
+These are not failures of capability. In each case, the system is doing exactly what it was optimised to do. The problem is that the optimisation target was not the same as the actual goal.
+
+Reward hacking is what happens when a system optimises the metric rather than the intention behind the metric. This is why alignment is closely related to the evaluation problem: a metric that can be hacked is not a good proxy for the thing we care about.
+
+## Preference modeling
+
+Since many human goals are hard to specify directly, one approach is to learn preferences from human feedback. Instead of writing a perfect reward function by hand, we ask humans to compare pairs of outputs and train a model to predict which output people prefer.
+
+Preference modeling has a natural appeal: it sidesteps the specification problem by treating human judgment as the objective. Rather than asking "what is the correct reward function?", it asks "what do humans choose when given options?"
+
+But preference modeling has its own limitations:
+
+- Human preferences are inconsistent and context-dependent
+- Different annotators may have different standards or values
+- People may prefer fluent, confident-sounding answers over careful, accurate ones
+- Preference data encodes whatever biases and blind spots the annotators have
+- The preference model is itself a learned approximation — it can be gamed
+
+Preference modeling replaces one hard problem — writing the objective — with another hard problem: learning a reliable proxy for human judgment.
+
+## Reinforcement learning from human feedback
+
+Reinforcement Learning from Human Feedback, or RLHF, is one of the most widely used alignment techniques for language models. It builds directly on preference modeling.
+
+The basic pipeline:
+
+1. Pretrain a language model on large text corpora.
+2. Collect human comparisons between pairs of model outputs ("which response is better?").
+3. Train a reward model to predict human preferences from these comparisons.
+4. Fine-tune the language model using reinforcement learning to produce outputs that score highly under the reward model.
+
+<RLHFLoop />
+
+RLHF has made real progress. It has substantially improved the helpfulness and reduced the obvious harmfulness of deployed language models. But it does not solve alignment.
+
+The reward model is only an approximation of human preferences, trained on a limited sample of comparisons. Optimising strongly against it can introduce new failure modes — the model may find ways to score highly that the annotators did not anticipate and would not endorse. The language model ends up aligned to the feedback process, not perfectly to human values.
+
+<MyView>
+I think alignment is best understood as a problem of specification under uncertainty. We rarely know how to write down exactly what we want, so we build proxies: reward functions, preference models, constitutions, benchmarks, and human feedback. These proxies are useful, but they are not the same as the underlying goal. Much of alignment research is really about making these proxies less misleading — closing the gap between what we measure and what we care about. That framing connects alignment tightly to evaluation, which is why I think the two research areas are more intertwined than they are often presented.
+</MyView>
+
+## Constitutional AI
+
+Constitutional AI tries to reduce dependence on direct human feedback by using a written set of principles — a "constitution" — to guide model behaviour. The model learns to critique and revise its own outputs according to these principles, and some of the preference signal can be generated by AI systems rather than entirely by human annotators (a variant called RLAIF — Reinforcement Learning from AI Feedback).
+
+This has practical advantages: it is more scalable than collecting human comparisons for every decision, and the principles are explicit rather than embedded implicitly in annotator judgments.
+
+But Constitutional AI does not remove human judgment. It moves human judgment into the design of the constitution and the evaluation of whether the system follows it. The principles themselves must still be chosen by humans, their interpretations can be ambiguous, and the model may follow the letter of a principle while violating its spirit. It is a useful tool, not a solution.
+
+## Scalable oversight
+
+As AI systems become more capable, a new challenge emerges: humans may struggle to evaluate their outputs directly. A model that can perform expert-level reasoning in a specialised domain may produce outputs that most human reviewers cannot reliably assess.
+
+Scalable oversight asks: how can humans supervise systems whose work is too complex, too fast, or too specialised for humans to check unaided?
+
+Several approaches are under exploration:
+
+- Using AI models to help humans evaluate other AI outputs — letting AI assist the oversight process
+- Decomposing hard tasks into smaller, checkable subtasks
+- Debate: having models argue for and against an answer, with the argument structure itself providing oversight signal
+- Recursive oversight: using weaker forms of supervision to bootstrap stronger oversight
+
+The core tension is real: to get help evaluating a powerful system, you may need to rely on another powerful system. The challenge is to benefit from AI assistance without blindly trusting the systems you are trying to supervise.
+
+## Why alignment is not solved
+
+Current alignment methods have made genuine progress, particularly for language models in everyday deployment. But they are not guarantees of correct behaviour.
+
+Several structural reasons make alignment difficult to fully solve:
+
+- Human goals are hard to specify, and preference models are imperfect proxies for them
+- Reward models can be exploited by sufficiently capable optimisers
+- Models may behave differently under distribution shift or adversarial inputs than they do during evaluation
+- Adversarial users actively search for ways to elicit misaligned behaviour
+- Evaluation benchmarks are incomplete, and passing them does not imply correct behaviour everywhere
+- The capability of AI systems may grow faster than our tools for overseeing them
+
+Current alignment methods improve average behaviour under known evaluation settings. They do not prove that a system will behave correctly in every deployment context, under adversarial pressure, or when given access to powerful tools. This gap between empirical improvement and principled guarantee is where much of the most important research is happening.
+
+## Alignment in deployed systems
+
+It is tempting to think of alignment as purely a training-time problem — something to solve before the model is released. In practice, alignment continues to matter after deployment.
+
+A deployed system also requires monitoring, guardrails, tool-use constraints, human review for high-stakes actions, and evaluation after release. The deployment context introduces conditions that were not present during training: new user populations, new tasks, new adversarial strategies, and interactions with other systems and tools.
+
+A model can be reasonably aligned in a benchmark setting and still behave unsafely as part of a larger deployed system. Alignment in the model does not automatically transfer to alignment in the system.
+
+## Open questions
+
+- How can we specify human intent more precisely without oversimplifying it?
+- How do we measure whether a model is aligned in open-ended, real-world settings?
+- Can reward models be made robust to exploitation by capable optimisers?
+- How can humans supervise systems that exceed human expertise in some domains?
+- How do we balance helpfulness, honesty, harmlessness, and user autonomy when they conflict?
+- What should a model do when user instructions conflict with safety constraints?
+- Can alignment methods provide formal guarantees, or only empirical improvements?
+
+## Conclusion
+
+AI alignment is difficult because it sits at the boundary between capability, objectives, human preferences, and evaluation. We want systems that are not merely powerful, but reliably directed toward the right goals.
+
+Current techniques — preference modeling, RLHF, and Constitutional AI — have made real progress, especially for language models. But they are not final solutions. They depend on imperfect feedback, incomplete evaluations, and assumptions about deployment conditions that may not hold in practice.
+
+The core alignment challenge remains: how do we build systems that do what we mean, not merely what we said, rewarded, or measured?
+
+<NextRead slug="what-makes-an-ai-system-safe" title="What Does It Mean for an AI System to Be Safe?" />

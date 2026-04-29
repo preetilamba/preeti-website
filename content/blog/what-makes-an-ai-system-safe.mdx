@@ -1,0 +1,120 @@
+---
+title: "What Does It Mean for an AI System to Be Safe?"
+date: "2026-04-26"
+summary: "An introduction to AI safety as a technical research area: what safety means, how it differs from alignment, and what researchers are actively working on."
+tags: ["AI Safety", "Alignment", "Machine Learning"]
+slug: "what-makes-an-ai-system-safe"
+---
+
+# What Does It Mean for an AI System to Be Safe?
+
+"AI safety" is a term that gets used in many different ways. For some people, it evokes long-term concerns about highly capable systems pursuing goals humans did not intend. For others, it means making sure a deployed chatbot does not produce harmful content today. Both concerns fall under the broad umbrella of AI safety, but they require different analyses and different tools.
+
+This article is an introduction to what AI safety means as a technical research area, why it is genuinely difficult, and what some of the active research directions look like.
+
+## Safety and alignment are not the same thing
+
+These terms are often used interchangeably, but it helps to distinguish them.
+
+**Safety** typically refers to the absence of harmful behavior — the system does not produce dangerous outputs, does not behave catastrophically under adversarial conditions, does not fail in ways that cause unacceptable harm. It is often framed in terms of what the system should not do.
+
+**Alignment** is broader: does the system pursue the goals we actually want it to pursue? A system can be aligned — accurately modeling human preferences — and still be unsafe if the humans specifying those preferences got something wrong. A system can also be safe in a narrow sense (not producing explicitly harmful content) while being misaligned in subtle ways (being systematically misleading, amplifying harmful biases, or optimizing for a proxy measure that diverges from the real goal).
+
+In practice, both problems are active areas of research and often overlap. But keeping the distinction in mind helps clarify what different research efforts are trying to accomplish.
+
+## What safety failures look like
+
+For practical purposes, an AI system is **safe** if it behaves reliably in accordance with its intended goals, across the range of situations it is deployed in, without causing unintended harm.
+
+There are at least six distinct categories of failure worth distinguishing:
+
+**Misuse**: A capable system is used deliberately to cause harm — generating disinformation, writing malicious code, enabling harassment. The system itself may be "working correctly" in a narrow sense; the failure is in how it is used.
+
+**Misalignment**: The system pursues a goal that diverges from what was intended. Classic example: a content recommendation system that maximizes engagement by amplifying outrage rather than informative content. The reward is high; the outcome is not what anyone wanted.
+
+**Robustness failures**: The system behaves safely in normal conditions but fails badly under distribution shift or adversarial inputs. A model that passes safety evaluations but can be reliably manipulated through carefully crafted prompts is not robust.
+
+**Hallucination and factual unreliability**: The system generates confident-sounding but incorrect information. The training objective does not distinguish between well-grounded and confabulated text, so the system has no inherent mechanism for knowing when it does not know something.
+
+**Monitoring and control failures**: We lack adequate methods to understand what the system is doing, predict when it will fail, or intervene before harm occurs.
+
+**System-level failures**: A system that is safe in isolation may behave unsafely when integrated into a larger pipeline — interacting with other models, tools, or deployment conditions it was not designed for.
+
+These categories are not independent. A system can fail in multiple ways simultaneously, and the failure modes interact.
+
+## The alignment problem and reward hacking
+
+A central challenge is the **alignment problem**: how do we ensure that an AI system pursues the goals we actually want it to pursue?
+
+This sounds simple, but it is not. Consider a system trained to optimize a reward function. If the reward function does not perfectly capture what we care about, the system may find ways to maximize the reward that are technically correct but practically undesirable — a phenomenon called **reward hacking**.
+
+Classic examples: a game-playing agent that finds an exploit in the game physics rather than playing as intended. A content recommendation system that discovers that outrage maximizes engagement. A language model that learns to sound helpful while subtly hedging in ways that are technically defensible but practically misleading.
+
+For large language models, alignment takes a different form than optimizing a scalar reward. These models are trained to predict text and then fine-tuned to be helpful and harmless. But the fine-tuning is imperfect, and the models may exhibit behaviors that are helpful in testing but problematic in deployment.
+
+## Current approaches to alignment
+
+**Reinforcement Learning from Human Feedback (RLHF)**: Train a reward model to predict human preferences, then use RL to optimize the language model against this reward. This is now a standard technique for aligning large language models.
+
+<RLHFLoop />
+
+A key nuance: RLHF does not guarantee safety. Reward models can be fooled — they learn to predict human preferences as expressed in training data, which may not capture all relevant failure modes. A model optimized via RLHF may appear safe in evaluations while still failing under adversarial prompting or distribution shift. RLHF is a useful tool; it is not a solution to the alignment problem.
+
+**Constitutional AI and RLAIF**: Train the model to critique and revise its own outputs according to a set of principles (Constitutional AI), or use another AI model as the preference judge rather than human raters (RLAIF — Reinforcement Learning from AI Feedback). This reduces dependence on expensive human labeling and can be scaled, but it inherits whatever limitations the critique model has. It is a useful complement to RLHF, not a replacement for careful human evaluation.
+
+**Interpretability**: Try to understand what is happening inside the model — which parts of the network activate for which concepts, how information flows, what the model is representing when it produces a given output. If we can understand the model better, we may be better at predicting when it will behave unsafely, before deployment rather than after.
+
+**Robustness**: Make models that behave consistently under distribution shift and adversarial inputs. A model that can be easily manipulated into producing unsafe outputs through clever prompting is not safe, even if it passes standard evaluations.
+
+**Evaluation**: Develop better methods for measuring safety properties. You cannot improve what you cannot measure, and current evaluation methods for safety are often inadequate — catching obvious failures but missing subtle ones.
+
+## Why is this hard?
+
+**Underspecification**: "Be helpful, harmless, and honest" is a reasonable informal description of what we want, but operationalizing it is hard. Different people will disagree about what counts as harmful or helpful in a given case. Specifying this precisely enough for a model to learn from is a genuine challenge.
+
+**Distribution shift**: Models are trained on some data distribution and deployed in a different one. Safety properties that hold in training may not hold in deployment.
+
+**Emergent behavior**: As language models scale, new capabilities emerge that were not present in smaller versions. Some of these capabilities are useful; some are potentially concerning. Predicting which capabilities will emerge and how they will interact with safety properties is difficult.
+
+**Evaluation is harder than performance**: It is much easier to evaluate whether a model produces a correct answer to a math problem than whether it is "safe." Safety failures can be subtle, context-dependent, and easy to miss in evaluations. Evaluation is not just a technical detail — it is a central unsolved problem.
+
+**Adversarial conditions**: Real-world systems are deployed to users who are actively trying to elicit unsafe behavior. A system that passes safety evaluations from well-intentioned evaluators may fail when probed by someone trying to find weaknesses.
+
+<MyView>
+I think evaluation deserves more emphasis than it typically gets in discussions of AI safety. The field tends to focus on methods — RLHF, Constitutional AI, interpretability — but the bottleneck is often measurement. We cannot reliably tell whether a safety technique is working unless we can measure what we are trying to improve. Building rigorous evaluation methodology is less exciting than building new models, but it may be where progress is most needed.
+</MyView>
+
+## A connection to generation methods
+
+AI safety techniques intersect interestingly with questions about generation itself. In autoregressive models, safety interventions typically happen at the token level: modify logit distributions, refuse at specific decision points, or apply filters. These are discrete, sequential interventions.
+
+Diffusion language models, which generate text through iterative denoising across the whole sequence, offer a structurally different intervention point: the generation trajectory itself. Could safety mechanisms monitor how a sequence is evolving across denoising steps, rather than only at the final output? The question is open, and it illustrates how foundational choices about generation architecture connect to practical questions about how to control what a model produces.
+
+## Open questions
+
+- How do we formally specify what we want from an AI system in a way that is both precise and captures what we actually care about?
+- Can safety properties be verified rather than just tested empirically?
+- How do we evaluate safety under distribution shift and adversarial conditions?
+- How do we ensure that making a model safer does not significantly reduce its usefulness?
+- What role do governance and institutional mechanisms play alongside technical safety measures?
+- As models are deployed in agentic settings — taking actions, calling tools, running over extended time horizons — how do the failure modes change?
+
+None of these questions have fully satisfying answers yet. This is part of what makes AI safety a genuinely important and open research area.
+
+## What this research area is not
+
+AI safety research is not only about long-term catastrophic scenarios. Most current technical safety research focuses on concrete, immediate problems: making deployed systems more reliable, less manipulable, more interpretable.
+
+It is also not about restricting what AI systems can do to keep them from being powerful. The goal is to make powerful systems that behave reliably — not to make them less capable, but to make their capabilities more predictable and controllable.
+
+## Conclusion
+
+AI safety is the problem of building AI systems that behave reliably, in accordance with human intentions, across the range of situations they are deployed in — including adversarial conditions and distribution shift.
+
+This is harder than it might initially seem. Specifying human intentions precisely is hard. Systems behave differently at scale than in testing. Evaluation of safety properties lags behind evaluation of capabilities.
+
+The field is developing technical tools to address these challenges: alignment methods, interpretability research, robustness techniques, and evaluation methodology. Progress is real but uneven, and the most important questions remain open.
+
+For anyone working in AI, understanding these challenges is becoming increasingly important — not just as a safety measure, but as a prerequisite for building systems that actually do what they are supposed to do.
+
+<NextRead slug="what-is-ai-alignment" title="What Is AI Alignment? A Beginner's Guide" />

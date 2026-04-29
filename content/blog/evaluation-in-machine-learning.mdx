@@ -1,0 +1,123 @@
+---
+title: "Evaluation in Machine Learning: Why Benchmarks Matter"
+date: "2026-04-26"
+summary: "A look at why evaluation is one of the hardest problems in ML, what makes a good benchmark, and why existing benchmarks often mislead."
+tags: ["Evaluation", "Benchmarking", "Machine Learning"]
+slug: "evaluation-in-machine-learning"
+---
+
+# Evaluation in Machine Learning: Why Benchmarks Matter
+
+Evaluation sounds like the easy part of machine learning. You train a model. You test it. You report the number. Done.
+
+In practice, evaluation is one of the hardest and most underappreciated problems in the field. How you measure performance shapes what you optimize for. Misleading evaluations lead to misleading conclusions about what models can and cannot do.
+
+This article is about why evaluation is hard, what makes a benchmark good or bad, and what we should want from evaluation methodology going forward.
+
+## What a benchmark is
+
+A **benchmark** is a standardized evaluation task used to compare models. A benchmark typically consists of:
+
+- A dataset (inputs and correct outputs)
+- An evaluation metric (how to score a model's outputs)
+- A protocol (how to run the evaluation)
+
+Benchmarks allow researchers to compare models on the same task, under the same conditions, with the same scoring rules. This is enormously valuable for scientific progress — without standardized evaluations, comparing different systems would be chaotic.
+
+## The problem: what benchmarks actually measure
+
+<BenchmarkCycle />
+
+The trouble is that benchmarks measure performance on a specific dataset, under specific conditions, using a specific metric. This is not the same as measuring the capability the benchmark is intended to proxy.
+
+Several common failure modes:
+
+### Benchmark saturation
+
+Many benchmarks that seemed challenging when introduced have been "saturated" — modern models achieve near-perfect or superhuman scores. When that happens, the benchmark stops being informative. It can no longer distinguish between models of different capability levels.
+
+ImageNet classification, once the gold standard for image recognition, is now saturated. Many NLP benchmarks have followed the same trajectory.
+
+When benchmarks saturate, there is a rush to create harder benchmarks. The new benchmarks are often harder in ways that are not well-understood, and the same saturation problem recurs.
+
+### Training contamination
+
+A model's training data may overlap with the evaluation data. If a model has seen the test questions (or very similar ones) during training, strong performance on the benchmark does not tell you much about generalization.
+
+Contamination is hard to detect reliably, especially for models trained on large internet-scale corpora where the provenance of training data is unclear.
+
+### Metric misalignment
+
+The metric used to score a benchmark may not capture what we actually care about.
+
+BLEU score for machine translation measures n-gram overlap with reference translations — but humans care about fluency and meaning, which correlate imperfectly with BLEU. Perplexity measures how well a model predicts test sequences, but it does not directly measure generation quality.
+
+When the metric is poorly aligned with the true goal, optimizing for the metric can produce models that score well but perform poorly on the actual task.
+
+### Narrow distribution
+
+Most benchmarks test models on a specific, curated distribution of examples. This distribution may not represent the range of conditions the model will encounter in deployment.
+
+A model that performs well on benchmark examples may fail on unusual edge cases, adversarially constructed inputs, or examples from populations not well-represented in the benchmark.
+
+## What makes a good benchmark
+
+A good benchmark has several properties:
+
+**Validity**: The benchmark should actually measure the capability it claims to measure. If it is supposed to measure reasoning, it should require reasoning — not pattern matching.
+
+**Reliability**: Results should be reproducible. Small changes in model settings or evaluation protocol should not drastically change scores.
+
+**Coverage**: The benchmark should cover the range of conditions relevant to the task, not just a convenient subset.
+
+**Interpretability**: It should be clear what a given score means. Is a score of 0.85 good or bad? What kinds of errors is the model making?
+
+**Resistance to saturation**: The benchmark should remain informative as models improve. This often means including a range of difficulty levels.
+
+**Contamination resistance**: The benchmark should use examples that are unlikely to appear in training data, or should include mechanisms for detecting contamination.
+
+No real benchmark achieves all of these perfectly. The best benchmarks are designed with these considerations in mind and are accompanied by honest discussion of their limitations.
+
+## Evaluation for generative models
+
+Evaluating generative models — text generators, image generators, code generators — is particularly hard.
+
+For discriminative models, evaluation is often clear: is the classification correct? For generative models, the space of valid outputs is large, and there is often no single correct answer.
+
+Common approaches:
+
+**Automatic metrics**: BLEU, ROUGE, perplexity, FID (for images), BERTScore. These are fast and scalable but often poorly correlated with human judgments.
+
+**Human evaluation**: Ask humans to rate or compare model outputs. More accurate but expensive, slow, and hard to standardize across studies.
+
+**Model-based evaluation**: Use another model (e.g., a large language model) to evaluate outputs. This has become increasingly common, but introduces its own biases and failure modes.
+
+There is no consensus on the right approach. Most serious evaluations use a combination of methods and are honest about the limitations of each.
+
+## Evaluation for safety
+
+Evaluating safety properties is a particularly hard instance of the general evaluation problem.
+
+Safety failures are often rare, context-dependent, and easy to miss in standard evaluations. A model might pass all safety evaluations during testing and fail in deployment, because:
+
+- The evaluation did not cover the relevant distribution of inputs.
+- Adversarial users find prompts that the evaluators did not try.
+- Safety failures only emerge in specific combinations of context.
+
+Developing evaluation methodology that reliably detects safety failures — rather than just confirming that a model passes a limited set of checks — is an active and important area of research.
+
+## The Goodhart problem
+
+All of this connects to a deeper issue known as **Goodhart's Law**: when a measure becomes a target, it ceases to be a good measure.
+
+When researchers optimize their models to perform well on benchmarks, they implicitly optimize for whatever the benchmark actually measures, which may drift from what they intended to measure. Models can become "benchmark-aware" without being more capable in the ways that matter.
+
+This is not a reason to abandon benchmarks — standardized evaluation is essential. It is a reason to use benchmarks carefully, to maintain multiple complementary benchmarks, and to treat evaluation methodology as a serious scientific problem rather than an afterthought.
+
+## Conclusion
+
+Evaluation is not a solved problem in machine learning. The benchmark that seems rigorous today may turn out to be saturated, contaminated, or misaligned with what we actually care about.
+
+Good evaluation requires thinking carefully about what you are measuring, whether your metric captures it, whether your test set is representative, and whether your results will generalize to conditions beyond the benchmark.
+
+These are difficult questions. But getting evaluation right is essential for making real scientific progress — and for building systems that actually work as intended.

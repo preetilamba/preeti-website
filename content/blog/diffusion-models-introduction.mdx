@@ -1,0 +1,124 @@
+---
+title: "Diffusion Models: Learning to Generate by Denoising"
+date: "2026-04-26"
+summary: "What diffusion models are, how they work, and why learning to reverse a noising process is such a powerful idea for generative AI."
+tags: ["Diffusion Models", "Generative AI", "Beginner"]
+slug: "diffusion-models-introduction"
+---
+
+# Diffusion Models: Learning to Generate by Denoising
+
+Diffusion models are behind some of the most striking generative AI systems of recent years — image generators that produce photorealistic scenes from text descriptions, audio models that synthesise realistic speech, and video systems that generate coherent motion. Understanding how they work is worth the effort, even if you are not a specialist.
+
+In modern generative AI, "diffusion model" usually refers to a **denoising diffusion model**: a model trained to reverse a gradual noising process. This article explains that idea from scratch.
+
+## The central insight: learning to denoise
+
+The key idea is deceptively simple.
+
+Take a clean image and add a small amount of random noise to it. You get a slightly noisy image. Add more noise, and you get a noisier image. Keep adding noise, and eventually you end up with something that looks like pure random static — no discernible structure at all.
+
+This is the **forward process**: a gradual destruction of structure. Crucially, the forward process is fixed by design. We choose how to add the noise; there is nothing to learn here. The learning happens entirely in the reverse process.
+
+The **reverse process** asks: can we train a model to undo this? If we can build a model that takes a noisy image and produces a slightly less noisy version, we can apply it repeatedly — starting from pure noise — and eventually arrive at a clean, realistic-looking image.
+
+Diffusion models learn the reverse process. They are trained to denoise.
+
+<ForwardReverseDiffusion />
+
+## The forward process in more detail
+
+Formally, the forward process is a Markov chain: each noisy step depends only on the previous step.
+
+At each step *t*, a small amount of Gaussian noise is added to the current sample. After *T* steps, the data has been transformed into something close to pure Gaussian noise.
+
+At a high level, the noisy sample at time *t* can be written as a mixture of the original clean data and Gaussian noise. As *t* increases, the weight on the clean signal decreases and the weight on the noise increases. By *T*, the clean signal has been almost entirely washed out.
+
+A useful property of this formulation: you can compute the noisy version of a data point at any step *t* directly from the original, without stepping through all intermediate steps. This makes training efficient — you can train on arbitrary noise levels without simulating the entire forward chain.
+
+The noise schedule controls how quickly noise accumulates. Common choices are linear or cosine schedules. The shape of the schedule affects training stability and sample quality.
+
+## What the model learns
+
+The model is trained to predict the noise added to a clean data point to produce a noisy version at step *t*.
+
+Given a noisy sample and the noise level *t*, the model outputs an estimate of the noise. The training objective minimises the difference between the predicted and actual noise. This is a standard supervised regression problem — and it works remarkably well.
+
+To predict the noise accurately, the model must implicitly learn what "clean" data looks like, because removing noise correctly requires understanding the underlying structure of the data.
+
+Another way to view this: diffusion models learn the direction in which a noisy sample should move to become more probable under the data distribution. This connects them to **score matching** — a branch of statistics concerned with estimating the gradient of the log data density. The score perspective provides a clean theoretical lens on what the model is learning and why the objective works.
+
+## Sampling: generating new data
+
+Once the model is trained, generating new data follows a simple iterative procedure:
+
+1. Sample a random noise vector (pure Gaussian noise).
+2. Apply the trained model to estimate the added noise. Use this estimate to update the sample toward a cleaner version.
+3. Repeat for many steps, gradually denoising.
+4. After enough steps, the output is a realistic sample from the data distribution.
+
+This iterative refinement is what gives diffusion models their characteristic behaviour. The model never commits to a final output in a single step — it progressively shapes the sample over many denoising steps.
+
+A practical note: early work used hundreds or thousands of denoising steps. Subsequent methods like DDIM, DPM-Solver, and consistency models have reduced this to tens of steps (or even one), making generation much faster.
+
+## Latent diffusion
+
+Many popular image generators do not run diffusion in raw pixel space. Instead, they use **latent diffusion**: a separate encoder compresses images into a lower-dimensional latent representation, diffusion is performed in that latent space, and a decoder maps the denoised latent back to pixel space.
+
+This is much cheaper computationally — diffusion in a small latent space is far less expensive than diffusion over millions of pixels — while preserving most of the visual quality. Stable Diffusion is the most prominent example of this approach.
+
+## Why text conditioning works
+
+Many diffusion models generate data conditioned on text descriptions. The standard approach is **classifier-free guidance**.
+
+During training, the model sees both the text condition and the noisy sample, and learns to predict the noise given the text. Occasionally the text is randomly dropped, training the model to also handle unconditional generation.
+
+At sampling time, the model runs twice at each step: once with the text condition and once without. The predictions are combined to amplify the effect of the conditioning. This produces outputs that more strongly reflect the text prompt while remaining realistic.
+
+A caution: too much guidance amplification can make outputs less natural — oversaturated, overly literal, or distorted. The guidance scale is a hyperparameter that requires tuning.
+
+## Beyond images
+
+The same denoising idea can be applied well beyond images.
+
+**Audio**: models denoise waveforms or mel spectrograms to generate speech and music. **Video**: the model must denoise while maintaining temporal consistency across frames — a harder problem that remains an active area of research.
+
+**Language**: applying diffusion to text is harder because text is discrete rather than continuous. Words and tokens are not amenable to the same Gaussian noising process used for images. Several approaches have been developed — noising in token space through masking or replacement, or embedding tokens in continuous space and applying diffusion there. These are called **diffusion language models**, and they represent a different paradigm for text generation compared to autoregressive models.
+
+Diffusion language models are especially interesting because their iterative, whole-sequence generation process is structurally different from the left-to-right commitment of autoregressive models. Whether and when this difference is practically advantageous is still an open question.
+
+## What makes diffusion models good
+
+Diffusion models have several properties that make them attractive:
+
+**Quality**: The iterative refinement process allows the model to progressively add structure and detail. This tends to produce very high-quality outputs, especially for images.
+
+**Diversity**: Diffusion models tend to produce diverse outputs across runs, unlike some generative models that collapse toward a small set of common samples.
+
+**Stable training**: The noise prediction objective is stable and well-behaved compared to adversarial objectives like those used in GANs.
+
+**Flexibility**: The same denoising framework can be applied — with appropriate modifications — to images, audio, video, and language.
+
+**Iterative control**: Because generation happens over many steps, there are multiple opportunities to condition, guide, or steer the sample during the process.
+
+## Limitations and open questions
+
+**Speed**: Generation requires many model evaluations (even with fast samplers). For applications requiring real-time or low-latency output, this is a constraint.
+
+**Compute cost**: Training large diffusion models is expensive. Most state-of-the-art systems require significant compute infrastructure.
+
+**Text faithfulness**: Conditioning on complex text descriptions is still imperfect. Models sometimes miss fine-grained details or misinterpret spatial relationships.
+
+**Discrete data**: Diffusion is natural for continuous signals like images, but text is discrete. Applying diffusion to tokens requires special design choices, and diffusion language models are not yet as capable or efficient as leading autoregressive models at comparable scale.
+
+**Theoretical understanding**: Despite strong empirical results, there are open questions about what diffusion models are really learning and what guarantees, if any, can be given about sample quality or diversity.
+
+## Conclusion
+
+Diffusion models are one of the more elegant ideas in modern machine learning. The core mechanism — learn to reverse a noising process, then denoise iteratively from noise to generate — is conceptually simple but empirically very powerful.
+
+The same idea connects to a rich theoretical framework through score matching and stochastic differential equations, making diffusion models interesting from both a practical and a mathematical perspective.
+
+For further reading, the DDPM paper (Ho et al., 2020) and the score-based generative modelling paper (Song et al., 2020) are the natural starting points. And since understanding diffusion naturally raises questions about how it compares to autoregressive generation, the next article addresses exactly that.
+
+<NextRead slug="why-diffusion-language-models-matter" title="Why Diffusion Language Models Matter" />

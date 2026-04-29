@@ -1,0 +1,207 @@
+---
+title: "Evaluation in Generative AI: Why Good Models Are So Hard to Measure"
+date: "2026-04-29"
+summary: "Generative models do not just need to produce outputs — they need to produce outputs that are useful, faithful, diverse, safe, and aligned with what users actually asked for. Measuring all of that is much harder than it looks."
+tags: ["Evaluation", "Generative AI", "Benchmarks", "AI Safety"]
+slug: "evaluation-in-generative-ai"
+---
+
+# Evaluation in Generative AI: Why Good Models Are So Hard to Measure
+
+In traditional supervised learning, evaluation often looks simple: compare the prediction to the correct label and compute accuracy. A classifier either identified the cat correctly or it did not. A regression model's error is measurable.
+
+Generative AI does not work this way. A summary can be good in many ways. An image can satisfy a prompt across different styles. A chatbot response can be helpful, harmless, fluent, and still factually wrong. There is rarely a single correct answer to compare against.
+
+This makes evaluation one of the most underappreciated problems in modern machine learning. New models are released constantly, benchmark scores improve steadily, and yet practitioners routinely encounter gaps between reported performance and real-world usefulness. Understanding why requires looking carefully at what we are actually trying to measure — and why getting it right is harder than it looks.
+
+## The core problem: many valid outputs
+
+In classification, each input has a correct label. The model either produces it or not. Evaluation is close to a lookup.
+
+Generative models have one-to-many outputs. Consider this prompt:
+
+> "Write a short explanation of diffusion models."
+
+One good response might explain diffusion through the analogy of gradually removing noise from an image. Another might explain it mathematically through forward and reverse Markov chains. A third might focus on applications like image generation. These are not equally useful for every reader, but none is simply "wrong."
+
+This structure — one prompt, many valid responses — is what makes evaluation hard. Any metric we choose is a proxy for quality, not quality itself. The question is always: how good a proxy?
+
+## What do we actually want to measure?
+
+Before discussing how to evaluate, it helps to be precise about what we want to evaluate. For generative models, the relevant properties include:
+
+**Quality**: Is the output fluent, coherent, and internally consistent? Does it read like something a capable person could produce? Quality is often the first thing people notice, but it is also the easiest to fake — a confident, fluent output can still be wrong.
+
+**Faithfulness**: Does the output follow the prompt or source material? A summariser that produces fluent text unrelated to the document is not faithful. A text-to-image model that generates a beautiful scene that ignores the prompt is not faithful either.
+
+**Diversity**: Does the model avoid producing the same kind of response every time? A model that is very accurate on average but always generates the same style of output may not serve users with different needs. Diversity matters both within a model's outputs and relative to other models.
+
+**Factuality**: Is the information correct? This is distinct from fluency. Models can produce grammatically perfect, confidently phrased, and entirely false statements. Measuring factuality requires external knowledge or human expertise — you cannot tell from the text alone.
+
+**Safety**: Does the model avoid harmful behavior — generating dangerous content, aiding misuse, producing outputs that are biased or discriminatory in context? Safety evaluation is a domain of its own, discussed further below.
+
+**Usefulness**: Does the output actually help the user accomplish their goal? This is arguably the most important property and also the hardest to measure, because it depends on user intent, context, and downstream use.
+
+**Efficiency**: How much compute, memory, and latency does the model require? A model that scores well on quality metrics but requires 10x the inference cost of a comparable alternative is not straightforwardly better.
+
+| Property | Question it asks | Example failure |
+|---|---|---|
+| Quality | Is the output coherent and fluent? | Fluent but shallow answer |
+| Faithfulness | Does it follow the prompt or source? | Summary invents details |
+| Diversity | Does it avoid repetitive outputs? | Same style and structure every time |
+| Factuality | Is it true? | Confident hallucination |
+| Safety | Does it avoid harm? | Gives dangerous instructions |
+| Usefulness | Does it help the user? | Correct but not actionable |
+| Efficiency | Is it practical to run? | Good output at 10x inference cost |
+
+No single metric captures all of these. A good evaluation should specify which properties it is measuring and acknowledge which ones it is not.
+
+## Why benchmarks can mislead
+
+Benchmarks are indispensable. They enable reproducible comparisons, track progress across research groups, and provide a shared vocabulary for discussing model capabilities. But they are also regularly misused or misunderstood.
+
+A benchmark is not reality. It is a small, structured proxy for reality.
+
+The choice of benchmark often determines the story a paper tells. A method can look strong on one benchmark and weak on another, not because the method changed, but because the benchmark emphasises a different capability. Readers who focus on the number and not on which benchmark produced it can come away with a very different impression than the evidence actually supports.
+
+Several failure modes recur:
+
+**Benchmark saturation**: When models reach or surpass human-level performance on a benchmark, the benchmark stops being informative. This has happened repeatedly — on reading comprehension, question answering, and image classification benchmarks. The progress is real, but it means the benchmark is no longer measuring what we care about.
+
+**Data contamination**: Large language models are trained on vast quantities of web data. If benchmark test sets appear in the training data — even indirectly, through forum discussions or answer keys — model performance will be inflated. Contamination is difficult to detect and often not disclosed.
+
+**Overfitting to public leaderboards**: When researchers optimise heavily against a specific benchmark, they may improve on that benchmark without improving the underlying capability. Methods developed specifically to score well on a benchmark may not generalise.
+
+**Narrow metrics**: A single metric — BLEU for translation, FID for image generation, perplexity for language models — measures a specific, well-defined property. It does not measure everything we care about, and optimising for it can trade off against other important properties.
+
+**Weak baselines**: A method that outperforms a poorly tuned or outdated baseline may not outperform a well-configured current alternative. Baseline quality is one of the most important and least discussed aspects of experimental design.
+
+**Distribution shift**: A benchmark may reflect a clean, curated setting, while deployment involves messy inputs, ambiguous user intent, multilingual content, adversarial behavior, and incomplete context. Good benchmark performance does not guarantee good deployment behavior.
+
+**Cherry-picked examples**: Qualitative examples in papers are typically chosen to illustrate the method's strengths. They are not representative samples of typical performance.
+
+<BenchmarkCycle />
+
+<MyView>
+I think the most insidious problem is the feedback loop between benchmarks and research incentives. Benchmarks become targets, and targets get gamed — not through dishonesty, but through the natural pressure to show improvement. When a community spends years optimising against a fixed benchmark, it becomes very hard to tell apart genuine progress from benchmark-specific tricks. New benchmarks are needed regularly, but creating good ones is expensive and undervalued relative to building new models.
+</MyView>
+
+## Human evaluation: useful but messy
+
+When automatic metrics fall short, human evaluation is the natural alternative. Humans can judge nuance, context-dependence, and subtle quality differences that metrics miss.
+
+But human evaluation has its own problems.
+
+**It is expensive.** Collecting high-quality human judgments at scale requires significant resources. For large-scale evaluation of many models across many tasks, cost becomes prohibitive.
+
+**Annotators disagree.** Different people have different standards, preferences, and interpretations of instructions. Inter-annotator agreement is often lower than expected, especially for subjective properties like helpfulness or style.
+
+**Instructions influence results.** How you frame the evaluation task — what you ask annotators to prioritise, how you define quality — significantly affects the results. Two studies of the same models with slightly different instructions can produce different rankings.
+
+**Preferences are subjective.** Whether a response is "better" often depends on who is asking and why. A response that experts rate highly may not be the one users find most helpful in practice.
+
+**Pairwise comparison is more reliable than absolute scoring.** Asking annotators to choose between two responses ("which is better?") typically produces more reliable results than asking them to rate a single response on a scale. Scales introduce calibration differences between annotators; pairwise comparisons sidestep this.
+
+Human evaluation is often treated as the gold standard for many properties. But it is not neutral or automatic — careful design of the evaluation protocol matters as much as careful model development.
+
+## LLM-as-judge: helpful but not ground truth
+
+A growing practice is to use a large language model as an evaluator — presenting it with model outputs and asking it to score or rank them. This is scalable, relatively cheap, and has shown surprisingly good correlation with human judgments in some settings.
+
+LLM judges can be used in **reference-based** settings, where the judge compares an output against a known answer, or **reference-free** settings, where it judges quality directly. Reference-free judging is more flexible but also more subjective and more vulnerable to judge bias.
+
+Either way, LLM judges have well-documented failure modes:
+
+**Position bias**: LLM judges often prefer whichever response is presented first, independent of quality.
+
+**Verbosity bias**: Longer responses are frequently rated higher, even when the extra length does not add information.
+
+**Sensitivity to prompt wording**: Small changes in how the evaluation prompt is written can significantly shift the judge's preferences.
+
+**Factuality blind spots**: LLM judges can be fooled by confidently stated falsehoods. They are better at judging fluency and apparent helpfulness than factual correctness.
+
+**Self-preference**: Models sometimes rate outputs from their own family more favourably.
+
+LLM judges are useful measurement tools. They are not ground truth. They should be calibrated against human judgments before being trusted, and their known failure modes should be explicitly tested for in any evaluation that relies on them heavily.
+
+## Evaluation is claim-dependent
+
+There is no universally good evaluation. The right evaluation depends on the claim being made.
+
+If a paper claims better factuality, it needs factuality-focused tests with grounded answers that can be verified. If it claims better reasoning, it needs reasoning tasks with controlled leakage and strong baselines. If it claims better safety, it needs both harmful and benign prompts to measure the safety–utility tradeoff, not just refusal rates on obvious examples. A mismatch between the claim a paper makes and the evaluation it uses to support that claim is one of the most common weaknesses in ML research.
+
+This also means that comparing two evaluations of the same model is often not straightforward. A model rated highly on one evaluation framework may be rated poorly on another — not because one framework is wrong, but because they are measuring different things, and neither evaluation is fully transparent about that.
+
+## Evaluation for safety is even harder
+
+Safety evaluation inherits all of the difficulties above and adds several of its own.
+
+**Harmfulness is context-dependent.** The same output can be benign or harmful depending on who receives it and what they do with it. A description of how a medication works is appropriate in one context and potentially dangerous in another. No fixed label captures this.
+
+**Refusal alone is not safety.** A model that refuses every borderline request is not safe — it is over-refusing, which makes it useless and creates its own harms. A useful safety evaluation should distinguish **helpful refusal** from **lazy refusal**. A helpful refusal explains the model's boundaries and redirects safely. A lazy refusal blocks benign requests simply because they contain sensitive keywords. The right measure is not refusal rate but whether the model correctly distinguishes contexts that warrant refusal from those that do not.
+
+**Jailbreak benchmarks evolve.** A model that passes today's jailbreak evaluation may fail against next month's jailbreak techniques. Safety evaluation against a fixed adversarial set is always a lagging indicator.
+
+**Keyword metrics can be misleading.** Detecting whether a response contains specific harmful phrases is not the same as detecting whether the response is harmful. Models can produce harmful content without using flagged keywords, and can trigger keyword filters while being entirely benign.
+
+For iterative generators such as diffusion language models, evaluation may need to inspect not only the final output but also the generation trajectory — how the sequence evolves across denoising steps, and whether intermediate states carry safety-relevant signal. This is an open research area that does not yet have established evaluation methodology.
+
+<MyView>
+The tension between safety and usefulness is where I think evaluation is most underdeveloped. It is easy to measure whether a model refused a given request. It is much harder to measure whether the refusal was warranted — whether the model correctly understood the context and the likely intent. Most safety evaluations I have seen measure refusal rates on fixed test sets of obviously harmful queries. That tells us something, but it misses the harder problem: how the model handles the broad middle ground where intent is ambiguous and context matters.
+</MyView>
+
+## What makes a good evaluation?
+
+Given all of this, what should a rigorous evaluation look like? Some properties worth building toward:
+
+**A clear claim being tested.** The evaluation should be designed to test a specific claim, not just to produce numbers. What exactly is the method supposed to do better?
+
+**Strong, well-tuned baselines.** Comparisons against outdated or misconfigured baselines are not informative. Baselines should be given fair conditions.
+
+**Multiple metrics.** No single metric captures everything. Use several, and report them all — including metrics where the proposed method does not improve.
+
+**Human or expert review where it matters.** For properties that automatic metrics handle poorly — nuance, factuality, safety in context — human judgment is needed.
+
+**Ablations.** What parts of the method are actually responsible for the improvement? Removing components one at a time helps answer this.
+
+**Robustness tests.** Does the improvement hold across different prompts, domains, and model sizes? Or only in the specific setting where it was reported?
+
+**Failure cases.** Where does the method not work? Reporting failure cases is more informative than only reporting successes. Negative results are valuable: if a method improves one property while hurting another, that tradeoff should be visible rather than hidden.
+
+**Uncertainty reporting.** If differences between methods are small, report confidence intervals, standard errors, or results across multiple seeds. A 1-point improvement may not mean much if the variance is 3 points.
+
+**Compute and latency.** A method that achieves better quality at 10x the inference cost is not straightforwardly better. Efficiency is part of the evaluation.
+
+**Transparent limitations.** What does this evaluation not measure? What would a more comprehensive evaluation look like?
+
+## Open questions
+
+**How do we evaluate long-horizon tasks?** As models are deployed in agentic settings — taking sequences of actions over time — evaluation of individual outputs becomes insufficient. How do we measure success on tasks that unfold over many steps?
+
+**What is the right unit of evaluation?** Should we evaluate individual outputs, or the model's behavior in conversation over time? For deployed systems, user outcomes may matter more than response-level metrics.
+
+**How do we measure genuine capability versus benchmark-specific performance?** This is the deep question behind benchmark saturation. It requires evaluation sets that are diverse, contamination-resistant, and updated regularly.
+
+**Can evaluation be made adversarially robust?** If a model knows it is being evaluated, can its responses be trusted as representative of typical behavior?
+
+**Who should design evaluations?** The researchers who build models have incentives to design evaluations that favor their methods. Independent evaluation infrastructure — analogous to peer review in other sciences — is underbuilt.
+
+## Why I care about this
+
+I care about evaluation because many research disagreements are really evaluation disagreements. When two methods appear to conflict, the real question is often: what metric was used, what baseline was chosen, what failure modes were ignored, and what claim was the evaluation designed to support?
+
+This is especially true in generative modeling and AI safety, where final outputs are only part of the story. A model can look safe under one evaluation protocol and behave harmfully under another. A generation method can look better on one benchmark and worse on another. Getting the evaluation right is not a methodological formality — it is what determines whether a claim holds up.
+
+Reading papers with this in mind changes what you look for. The method section gets a first read; the evaluation section gets the careful one.
+
+## Conclusion: evaluation is part of the contribution
+
+Evaluation is not a technical afterthought. It is part of the scientific contribution.
+
+A weak evaluation can make a weak method look strong. Carefully chosen metrics, conveniently tuned baselines, and cherry-picked examples can produce impressive-looking results that collapse under independent scrutiny. This is not always intentional — evaluation is hard, and researchers are often not sure themselves what their method is actually doing.
+
+A strong evaluation, on the other hand, reveals what a method actually teaches us. It tells you where the improvement comes from, where it does not hold, and what questions remain open. Done well, the evaluation is often more informative than the method itself.
+
+For anyone doing research in generative AI, taking evaluation seriously — asking not just "did the number go up?" but "what does this number actually measure, and does it measure what we care about?" — is one of the most important intellectual habits to develop.
+
+<NextRead slug="hallucination-in-language-models" title="Hallucination in Language Models: Why Fluent Text Can Still Be Wrong" />
